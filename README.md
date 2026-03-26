@@ -9,6 +9,7 @@
 | 技能名称 | 描述 | 适用场景 |
 |---------|------|---------|
 | [scrapling-article-fetch](./scrapling-article-fetch) | 智能抓取网页文章内容并转换为 Markdown，支持自动写入飞书文档 | 文章整理、内容归档、公众号文章提取 |
+| [md-to-wechat](./md-to-wechat) | 将本地 Markdown 文章渲染为微信公众号格式并一键推送到草稿箱 | 微信公众号发布、文章推送、内容同步 |
 
 ## 🚀 快速开始
 
@@ -29,6 +30,11 @@ agent-skills/
 │   ├── SKILL.md          # 技能说明文档
 │   ├── scripts/          # 执行脚本
 │   └── evals/            # 评估测试
+├── md-to-wechat/          # 微信公众号发布技能
+│   ├── SKILL.md          # 技能说明文档
+│   ├── .env              # 配置文件
+│   ├── references/       # 配置参考文档
+│   └── scripts/          # 执行脚本
 └── ...                   # 更多技能（持续添加中）
 ```
 
