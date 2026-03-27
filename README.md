@@ -10,6 +10,7 @@
 |---------|------|---------|
 | [scrapling-article-fetch](./scrapling-article-fetch) | 智能抓取网页文章内容并转换为 Markdown，支持自动写入飞书文档 | 文章整理、内容归档、公众号文章提取 |
 | [md-to-wechat](./md-to-wechat) | 将本地 Markdown 文章渲染为微信公众号格式并一键推送到草稿箱 | 微信公众号发布、文章推送、内容同步 |
+| [wechat-watch](./wechat-watch) | 微信公众号文章订阅与推送，定时轮询关注的公众号，检测新文章后推送到飞书（建议配合 OpenClaw 定时任务使用） | 公众号订阅、文章监控、内容推送 |
 
 ## 🚀 快速开始
 
@@ -35,6 +36,10 @@ agent-skills/
 │   ├── .env              # 配置文件
 │   ├── references/       # 配置参考文档
 │   └── scripts/          # 执行脚本
+├── wechat-watch/          # 微信公众号订阅推送技能
+│   ├── SKILL.md          # 技能说明文档
+│   ├── scripts/          # 检查脚本
+│   └── services/         # API 服务
 └── ...                   # 更多技能（持续添加中）
 ```
 
