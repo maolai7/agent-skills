@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RSS 订阅管理 - WeChat Download API</title>
+    <style>
+        :root {
+            --primary-color: #1890ff;
+            --success-color: #52c41a;
+            --warning-color: #fa8c16;
+            --error-color: #ff4d4f;
+            --text-primary: #262626;
+            --text-secondary: #595959;
+            --text-muted: #8c8c8c;
+            --bg-primary: #ffffff;
+            --bg-secondary: #fafafa;
+            --border-light: #f0f0f0;
+            --border-base: #d9d9d9;
+            --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.06);
+            --shadow-base: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --radius-small: 4px;
+            --radius-base: 8px;
+            --radius-large: 12px;
+            --font-xs: 12px;
+            --font-sm: 14px;
+            --font-base: 16px;
+            --font-lg: 20px;
+            --font-xl: 24px;
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --duration-fast: 200ms;
+            --duration-normal: 300ms;
+            --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .layout {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: var(--space-xl) var(--space-lg);
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-xl);
+        }
+
+        .header-left h1 {
+            font-size: var(--font-xl);
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .header-left p {
+            font-size: var(--font-sm);
+            color: var(--text-secondary);
+            margin-top: var(--space-xs);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: var(--space-sm);
+        }
+
+        .btn-sm {
+            padding: 6px 16px;
+            border-radius: var(--radius-base);
+            font-size: var(--font-xs);
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--border-base);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all var(--duration-fast) var(--ease-in-out);
+            white-space: nowrap;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .btn-sm:hover { border-color: var(--primary-color); color: var(--primary-color); }
+        .btn-sm.btn-primary { background: var(--primary-color); color: #fff; border-color: var(--primary-color); }
+        .btn-sm.btn-primary:hover { background: #096dd9; border-color: #096dd9; }
+
+        /* Status Bar */
+        .status-bar {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-large);
+            box-shadow: var(--shadow-light);
+            padding: var(--space-md) var(--space-lg);
+            margin-bottom: var(--space-lg);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .status-bar .left {
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+            font-size: var(--font-sm);
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-dot.on { background: var(--success-color); }
+        .status-dot.off { background: var(--error-color); }
+
+        /* Add form */
+        .add-section {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-large);
+            box-shadow: var(--shadow-light);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+        }
+
+        .add-section h2 {
+            font-size: var(--font-base);
+            font-weight: 600;
+            margin-bottom: var(--space-md);
+        }
+
+        .search-row {
+            display: flex;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-md);
+        }
+
+        .search-row input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border-base);
+            border-radius: var(--radius-base);
+            font-size: var(--font-sm);
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color var(--duration-fast) var(--ease-in-out);
+        }
+
+        .search-row input::placeholder { color: var(--border-base); }
+        .search-row input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1); }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: var(--radius-base);
+            font-size: var(--font-sm);
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all var(--duration-fast) var(--ease-in-out);
+        }
+
+        .btn-primary { background: var(--primary-color); color: #fff; }
+        .btn-primary:hover { background: #096dd9; }
+        .btn-primary:disabled { background: var(--border-base); cursor: not-allowed; }
+
+        /* Search results */
+        .search-results {
+            display: none;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-base);
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        .search-results.visible { display: block; }
+
+        .search-item {
+            display: flex;
+            align-items: center;
+            padding: 12px var(--space-md);
+            border-bottom: 1px solid var(--border-light);
+            transition: background var(--duration-fast) var(--ease-in-out);
+        }
+
+        .search-item:last-child { border-bottom: none; }
+        .search-item:hover { background: var(--bg-secondary); }
+
+        .search-item img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-right: var(--space-md);
+            flex-shrink: 0;
+            background: var(--border-light);
+        }
+
+        .search-item-info { flex: 1; min-width: 0; }
+        .search-item-info .name { font-size: var(--font-sm); font-weight: 600; }
+        .search-item-info .alias { font-size: var(--font-xs); color: var(--text-muted); }
+
+        .search-item .btn-subscribe {
+            padding: 4px 14px;
+            border-radius: var(--radius-small);
+            font-size: var(--font-xs);
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--primary-color);
+            background: transparent;
+            color: var(--primary-color);
+            transition: all var(--duration-fast) var(--ease-in-out);
+            flex-shrink: 0;
+        }
+
+        .search-item .btn-subscribe:hover { background: var(--primary-color); color: #fff; }
+        .search-item .btn-subscribe.subscribed { border-color: var(--success-color); color: var(--success-color); pointer-events: none; }
+
+        /* Subscription list */
+        .sub-section {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-large);
+            box-shadow: var(--shadow-light);
+            padding: var(--space-lg);
+        }
+
+        .sub-section h2 {
+            font-size: var(--font-base);
+            font-weight: 600;
+            margin-bottom: var(--space-md);
+        }
+
+        .sub-empty {
+            text-align: center;
+            padding: var(--space-xl);
+            color: var(--text-muted);
+            font-size: var(--font-sm);
+        }
+
+        .sub-list { list-style: none; }
+        .sub-list li + li { border-top: 1px solid var(--border-light); }
+
+        .sub-item {
+            display: flex;
+            align-items: center;
+            padding: 14px 0;
+            gap: var(--space-md);
+        }
+
+        .sub-item img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            background: var(--border-light);
+        }
+
+        .sub-item-info { flex: 1; min-width: 0; }
+        .sub-item-info .name { font-size: var(--font-sm); font-weight: 600; }
+
+        .sub-item-meta {
+            font-size: var(--font-xs);
+            color: var(--text-muted);
+            margin-top: 2px;
+            display: flex;
+            gap: var(--space-md);
+        }
+
+        .sub-item-actions {
+            display: flex;
+            gap: var(--space-sm);
+            flex-shrink: 0;
+        }
+
+        .btn-copy {
+            padding: 4px 12px;
+            border-radius: var(--radius-small);
+            font-size: var(--font-xs);
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--border-base);
+            background: transparent;
+            color: var(--text-secondary);
+            transition: all var(--duration-fast) var(--ease-in-out);
+        }
+
+        .btn-copy:hover { border-color: var(--primary-color); color: var(--primary-color); }
+
+        .btn-unsub {
+            padding: 4px 12px;
+            border-radius: var(--radius-small);
+            font-size: var(--font-xs);
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--border-light);
+            background: transparent;
+            color: var(--text-muted);
+            transition: all var(--duration-fast) var(--ease-in-out);
+        }
+
+        .btn-unsub:hover { border-color: var(--error-color); color: var(--error-color); }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--text-primary);
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: var(--radius-base);
+            font-size: var(--font-sm);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            pointer-events: none;
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        .footer {
+            margin-top: var(--space-xl);
+            padding-top: var(--space-md);
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: var(--font-xs);
+            color: var(--text-muted);
+        }
+
+        .footer a { color: var(--text-muted); text-decoration: none; transition: color var(--duration-fast); }
+        .footer a:hover { color: var(--primary-color); }
+        .footer-links { display: flex; gap: var(--space-md); }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--border-light);
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            .layout { padding: var(--space-lg) var(--space-md); }
+            .header { flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
+            .status-bar { flex-direction: column; gap: var(--space-sm); }
+            .sub-item { flex-direction: column; align-items: flex-start; }
+            .sub-item-actions { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <div class="header">
+            <div class="header-left">
+                <h1>RSS 订阅管理</h1>
+                <p>搜索公众号并添加 RSS 订阅，文章自动更新</p>
+            </div>
+            <div class="header-actions">
+                <a href="/admin.html" class="btn-sm">返回面板</a>
+                <button class="btn-sm btn-primary" onclick="triggerPoll()">立即轮询</button>
+            </div>
+        </div>
+
+        <div class="status-bar" id="statusBar">
+            <div class="left">
+                <span>轮询器</span>
+                <span class="status-dot" id="pollerDot"></span>
+                <span id="pollerText">检查中...</span>
+            </div>
+            <div style="font-size:var(--font-xs);color:var(--text-muted);" id="subCountText"></div>
+        </div>
+
+        <div class="add-section">
+            <h2>添加订阅</h2>
+            <div class="search-row">
+                <input type="text" id="searchInput" placeholder="输入公众号名称搜索...">
+                <button class="btn btn-primary" id="searchBtn" onclick="doSearch()">搜索</button>
+            </div>
+            <div class="search-results" id="searchResults"></div>
+        </div>
+
+        <div class="sub-section">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-md);">
+                <h2 style="margin-bottom:0;">我的订阅</h2>
+                <div style="display:flex;gap:var(--space-sm);position:relative;">
+                    <div id="exportDropdown" style="position:relative;">
+                        <button class="btn-sm" onclick="toggleExportMenu()">导出</button>
+                        <div id="exportMenu" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:var(--bg-primary);border:1px solid var(--border-base);border-radius:var(--radius-base);box-shadow:var(--shadow-base);z-index:10;min-width:120px;">
+                            <div style="padding:8px 16px;cursor:pointer;font-size:var(--font-sm);transition:background var(--duration-fast);" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''" onclick="doExport('csv')">CSV</div>
+                            <div style="padding:8px 16px;cursor:pointer;font-size:var(--font-sm);transition:background var(--duration-fast);" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''" onclick="doExport('opml')">OPML</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="aggRssBar" style="display:none;background:var(--bg-secondary);border:1px solid var(--border-light);border-radius:var(--radius-base);padding:12px var(--space-md);margin-bottom:var(--space-md);">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:var(--font-xs);font-weight:600;color:var(--text-secondary);margin-bottom:4px;">聚合 RSS 链接</div>
+                        <div id="aggRssUrl" style="font-size:var(--font-xs);color:var(--text-muted);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
+                    </div>
+                    <button class="btn-copy" onclick="copyRss(document.getElementById('aggRssUrl').textContent)">复制</button>
+                </div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">包含所有订阅的公众号文章，订阅变动自动生效，无需更换链接</div>
+            </div>
+            <div id="subList"><div class="sub-empty">加载中...</div></div>
+        </div>
+
+        <div class="footer">
+            <span>WeChat Download API v1.0.0</span>
+            <div class="footer-links">
+                <a href="/admin.html">管理面板</a>
+                <a href="/api/docs" target="_blank">API 文档</a>
+                <a href="https://github.com/tmwgsicp/wechat-download-api" target="_blank">GitHub</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        function showToast(msg, duration) {
+            var t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(t._timer);
+            t._timer = setTimeout(function() { t.classList.remove('show'); }, duration || 2000);
+        }
+
+        async function loadStatus() {
+            try {
+                var res = await fetch('/api/rss/status');
+                var d = await res.json();
+                var dot = document.getElementById('pollerDot');
+                var text = document.getElementById('pollerText');
+                var count = document.getElementById('subCountText');
+                if (d.success && d.data) {
+                    dot.className = 'status-dot ' + (d.data.running ? 'on' : 'off');
+                    text.textContent = d.data.running ? '运行中' : '已停止';
+                    count.textContent = d.data.subscription_count + ' 个订阅';
+                }
+            } catch (e) {
+                document.getElementById('pollerText').textContent = '获取失败';
+            }
+        }
+
+        async function loadSubscriptions() {
+            var el = document.getElementById('subList');
+            try {
+                var res = await fetch('/api/rss/subscriptions');
+                var d = await res.json();
+                if (!d.success || !d.data || d.data.length === 0) {
+                    el.innerHTML = '<div class="sub-empty">暂无订阅，搜索公众号后添加</div>';
+                    updateAggRssBar(false);
+                    return;
+                }
+                updateAggRssBar(true);
+                var html = '<ul class="sub-list">';
+                d.data.forEach(function(s) {
+                    var lastPoll = s.last_poll ? new Date(s.last_poll * 1000).toLocaleString('zh-CN') : '从未';
+                    html += '<li><div class="sub-item">';
+                    html += '<img src="' + (s.head_img || '') + '" alt="" onerror="this.style.display=\'none\'">';
+                    html += '<div class="sub-item-info">';
+                    html += '<div class="name">' + escHtml(s.nickname || s.fakeid) + '</div>';
+                    html += '<div class="sub-item-meta">';
+                    html += '<span>' + s.article_count + ' 篇文章</span>';
+                    html += '<span>最后轮询: ' + lastPoll + '</span>';
+                    html += '</div></div>';
+                    html += '<div class="sub-item-actions">';
+                    html += '<button class="btn-copy" onclick="copyRss(\'' + escAttr(s.rss_url) + '\')">复制 RSS</button>';
+                    html += '<button class="btn-unsub" onclick="doUnsub(\'' + escAttr(s.fakeid) + '\')">取消</button>';
+                    html += '</div></div></li>';
+                });
+                html += '</ul>';
+                el.innerHTML = html;
+            } catch (e) {
+                el.innerHTML = '<div class="sub-empty">加载失败: ' + e.message + '</div>';
+                updateAggRssBar(false);
+            }
+        }
+
+        async function doSearch() {
+            var q = document.getElementById('searchInput').value.trim();
+            if (!q) return;
+            var btn = document.getElementById('searchBtn');
+            var panel = document.getElementById('searchResults');
+            btn.disabled = true;
+            btn.textContent = '搜索中...';
+            panel.className = 'search-results';
+            panel.innerHTML = '';
+
+            try {
+                var res = await fetch('/api/public/searchbiz?query=' + encodeURIComponent(q));
+                var d = await res.json();
+                if (!d.success || !d.data || !d.data.list || d.data.list.length === 0) {
+                    panel.className = 'search-results visible';
+                    panel.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:var(--font-sm);">未找到相关公众号</div>';
+                    return;
+                }
+                var html = '';
+                d.data.list.forEach(function(item) {
+                    html += '<div class="search-item">';
+                    html += '<img src="' + (item.round_head_img || '') + '" alt="" onerror="this.style.display=\'none\'">';
+                    html += '<div class="search-item-info">';
+                    html += '<div class="name">' + escHtml(item.nickname || '') + '</div>';
+                    html += '<div class="alias">' + escHtml(item.alias || item.fakeid || '') + '</div>';
+                    html += '</div>';
+                    html += '<button class="btn-subscribe" onclick="doSubscribe(this,\'' +
+                        escAttr(item.fakeid) + '\',\'' +
+                        escAttr(item.nickname || '') + '\',\'' +
+                        escAttr(item.alias || '') + '\',\'' +
+                        escAttr(item.round_head_img || '') +
+                        '\')">订阅</button>';
+                    html += '</div>';
+                });
+                panel.className = 'search-results visible';
+                panel.innerHTML = html;
+            } catch (e) {
+                panel.className = 'search-results visible';
+                panel.innerHTML = '<div style="padding:16px;text-align:center;color:var(--error-color);font-size:var(--font-sm);">搜索失败: ' + e.message + '</div>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '搜索';
+            }
+        }
+
+        async function doSubscribe(btnEl, fakeid, nickname, alias, headImg) {
+            btnEl.disabled = true;
+            btnEl.textContent = '添加中...';
+            try {
+                var res = await fetch('/api/rss/subscribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ fakeid: fakeid, nickname: nickname, alias: alias, head_img: headImg })
+                });
+                var d = await res.json();
+                if (d.success) {
+                    btnEl.className = 'btn-subscribe subscribed';
+                    btnEl.textContent = '已订阅';
+                    showToast(d.message || '订阅成功');
+                    loadSubscriptions();
+                    loadStatus();
+                } else {
+                    btnEl.disabled = false;
+                    btnEl.textContent = '订阅';
+                    showToast(d.message || '订阅失败');
+                }
+            } catch (e) {
+                btnEl.disabled = false;
+                btnEl.textContent = '订阅';
+                showToast('网络错误: ' + e.message);
+            }
+        }
+
+        async function doUnsub(fakeid) {
+            if (!confirm('确定取消订阅？该公众号的缓存文章也将被删除。')) return;
+            try {
+                var res = await fetch('/api/rss/subscribe/' + encodeURIComponent(fakeid), { method: 'DELETE' });
+                var d = await res.json();
+                showToast(d.message || (d.success ? '已取消' : '操作失败'));
+                loadSubscriptions();
+                loadStatus();
+            } catch (e) {
+                showToast('网络错误: ' + e.message);
+            }
+        }
+
+        function copyRss(url) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(function() {
+                    showToast('RSS 地址已复制');
+                });
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = url;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showToast('RSS 地址已复制');
+            }
+        }
+
+        async function triggerPoll() {
+            showToast('正在轮询...');
+            try {
+                var res = await fetch('/api/rss/poll', { method: 'POST' });
+                var d = await res.json();
+                showToast(d.data && d.data.message ? d.data.message : '轮询完成');
+                loadSubscriptions();
+            } catch (e) {
+                showToast('轮询失败: ' + e.message);
+            }
+        }
+
+        function escHtml(s) {
+            var d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        function escAttr(s) {
+            return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        }
+
+        function updateAggRssBar(hasSubs) {
+            var bar = document.getElementById('aggRssBar');
+            if (hasSubs) {
+                var url = window.location.origin + '/api/rss/all';
+                document.getElementById('aggRssUrl').textContent = url;
+                bar.style.display = 'block';
+            } else {
+                bar.style.display = 'none';
+            }
+        }
+
+        function toggleExportMenu() {
+            var menu = document.getElementById('exportMenu');
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function doExport(format) {
+            document.getElementById('exportMenu').style.display = 'none';
+            window.location.href = '/api/rss/export?format=' + format;
+        }
+
+        document.addEventListener('click', function(e) {
+            var dd = document.getElementById('exportDropdown');
+            if (dd && !dd.contains(e.target)) {
+                document.getElementById('exportMenu').style.display = 'none';
+            }
+        });
+
+        document.getElementById('searchInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') doSearch();
+        });
+
+        window.addEventListener('load', function() {
+            loadStatus();
+            loadSubscriptions();
+        });
+    </script>
+</body>
+</html>

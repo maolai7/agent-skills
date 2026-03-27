@@ -1,0 +1,57 @@
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data (mounted as volume)
+data/
+*.db
+
+# Logs
+*.log
+
+# Cursor/Claude
+.cursor/
+.claude/
+
+# SaaS version (not for open-source image)
+saas/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Docs (not needed in image)
+docs/
+*.md
+!requirements.txt
+
+# Temp
+*.tmp
+*.bak

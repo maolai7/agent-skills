@@ -1,0 +1,31 @@
+# WeChat Download API - Docker Compose
+# Usage: docker-compose up -d
+#
+# First time setup:
+#   1. Copy env.example to .env: cp env.example .env
+#   2. Edit .env and set SITE_URL to your actual URL
+#   3. Run: docker-compose up -d
+#   4. Visit http://localhost:5000/login.html to scan QR code
+
+services:
+  wechat-api:
+    image: tmwgsicp/wechat-download-api:latest
+    # Or build locally:
+    # build: .
+    container_name: wechat-download-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persist SQLite database
+      - ./data:/app/data
+      # Config file (writable - login saves credentials here)
+      - ./.env:/app/.env
+    environment:
+      - TZ=Asia/Shanghai
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s

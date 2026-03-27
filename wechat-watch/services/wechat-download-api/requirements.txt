@@ -1,0 +1,7 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+httpx==0.25.2
+python-dotenv==1.0.0
+curl_cffi>=0.7.0
+beautifulsoup4>=4.12.0

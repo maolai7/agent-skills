@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables (注释掉，允许提交空的 .env 模板)
+# .env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+.claude/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files
+test_qr.png
+*.log
+
+# QR codes (generated dynamically)
+static/qrcodes/
+
+# Temporary files
+*.tmp
+*.bak
+
+# Example output files
+articles*.json
+fetch_progress.json
+
+# Logs
+logs/
+
+# RSS database (忽略数据库文件，但保留目录结构)
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+
+# SaaS 版本（独立仓库管理）
+saas/
