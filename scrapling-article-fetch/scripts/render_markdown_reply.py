@@ -3,6 +3,8 @@ import json
 import sys
 from pathlib import Path
 
+from io_utils import configure_utf8_stdio
+
 
 def render_reply(title: str, src_url: str, markdown: str) -> str:
     body = markdown.strip()
@@ -16,6 +18,8 @@ def render_reply(title: str, src_url: str, markdown: str) -> str:
 
 
 def main() -> int:
+    configure_utf8_stdio()
+
     if len(sys.argv) != 4:
         print("usage: render_markdown_reply.py <title> <src_url> <markdown_file>", file=sys.stderr)
         return 2

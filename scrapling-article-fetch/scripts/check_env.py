@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
+"""Check Python/uv readiness for scrapling-article-fetch and print JSON."""
+
+from __future__ import annotations
+
 import json
 import shutil
 import subprocess
 import sys
+
+from io_utils import configure_utf8_stdio
 
 
 def check_python() -> dict:
@@ -16,27 +22,33 @@ def check_python() -> dict:
         "install_hint": "未检测到可用 Python 3.10+。请先安装 Python，或在你确认后由 agent 帮你安装。",
     }
 
-    candidates = ["python3", "python"]
-    for cmd in candidates:
-        path = shutil.which(cmd)
-        if not path:
+    for cmd in ("python3", "python"):
+        if not shutil.which(cmd):
             continue
         try:
-            out = subprocess.check_output([cmd, "-c", "import sys; print('.'.join(map(str, sys.version_info[:3])))"], text=True).strip()
+            out = subprocess.check_output(
+                [cmd, "-c", "import sys; print('.'.join(map(str, sys.version_info[:3])))"],
+                text=True,
+            ).strip()
             parts = tuple(int(x) for x in out.split("."))
-            result["python_found"] = True
-            result["python_cmd"] = cmd
-            result["python_version"] = out
-            result["python_ok"] = parts >= (3, 10)
-            break
         except Exception:
             continue
+
+        result["python_found"] = True
+        result["python_cmd"] = cmd
+        result["python_version"] = out
+        result["python_ok"] = parts >= (3, 10)
+        break
 
     result["uv_found"] = shutil.which("uv") is not None
 
     if result["python_found"]:
         try:
-            subprocess.check_call([result["python_cmd"], "-c", "import venv"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.check_call(
+                [result["python_cmd"], "-c", "import venv"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
             result["venv_available"] = True
         except Exception:
             result["venv_available"] = False
@@ -49,6 +61,12 @@ def check_python() -> dict:
     return result
 
 
-if __name__ == "__main__":
+def main() -> int:
+    configure_utf8_stdio()
     json.dump(check_python(), sys.stdout, ensure_ascii=False)
     sys.stdout.write("\n")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

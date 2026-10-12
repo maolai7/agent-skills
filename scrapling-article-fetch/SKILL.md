@@ -1,106 +1,237 @@
 ---
 name: scrapling-article-fetch
-description: 使用 Scrapling + html2text 从 URL 抓取可读正文（含图片），按优先级选择器提取并按字符数截断；随后自动写入飞书文档并返回文档链接。适用于用户发送文章/博客/新闻链接（尤其是微信公众号 mp.weixin.qq.com）并希望快速验收正文内容的场景。
+description: 使用 Scrapling + html2text 抓取文章正文并转成 Markdown/JSON，适合处理文章、博客、新闻和微信公众号链接，尤其适合“帮我抓这篇公众号文章”“读取这篇文章正文”“把这篇链接转成 Markdown”“抓完后写进飞书文档”这类请求。
 ---
 
-将文章正文抓取为 Markdown，并按需要写入飞书文档供用户验收。
+把文章正文抓成 Markdown / JSON，并默认归档到本地，方便后续回看或继续加工。
 
-## 前提条件
+## 一句话怎么用
 
-1. Python 3.10+。
-2. 运行环境满足以下其一：
-   - 推荐：已安装 `uv`
-   - 备选：可用的 `venv + pip`
-3. 机器可访问目标 URL。
-4. 如需写飞书文档，默认直接使用 skill 内脚本按“当前 agent 身份”直连 Feishu OpenAPI；不要手动传 `app_id` / `app_secret`。
-
-## 环境检查（必须先做）
-
-在真正抓取前，先检查当前环境是否具备 Python。不要假设系统一定有 `python` 别名；统一先跑 wrapper：
+默认先检查环境，再抓文章。
 
 ```bash
-bash ~/.openclaw/skills/scrapling-article-fetch/scripts/run_pipeline.sh
+python scripts/check_env.py
+python scripts/fetch_article.py <url>
 ```
 
-这个 wrapper 会优先选 `python3`，其次 `python`，避免再次出现“环境有 Python，但入口命令写死导致误判”的问题。
-
-执行规则：
-- 若 `python_ok=true`：继续执行抓取。
-- 若没有 Python 或版本低于 3.10：先提醒用户安装，或在征得用户同意后再帮装；不要直接跳过检查硬跑。
-- 若没有 `uv` 但有可用 Python：可以继续，只是改用 `venv + pip` 方案。
-
-## 执行命令（抓取）
-
-在受管控 Python 环境中，优先使用 `uv`：
+如果要 JSON：
 
 ```bash
-uv run --with 'scrapling[fetchers]' --with html2text python ~/.openclaw/skills/scrapling-article-fetch/scripts/scrapling_fetch.py <url> [max_chars]
+python scripts/fetch_article.py <url> --json
 ```
 
-默认 `max_chars=30000`。
+## 这个 skill 负责什么
 
-## 执行方式（Markdown → 飞书文档）
+这个 skill 解决 3 件事：
 
-当需要把抓取结果写入飞书文档时，默认仍使用 `md_to_feishu_doc.py`，但**不要让模型自由手写标题字符串**。
+1. 检查当前机器是否具备可用的 Python 抓取环境
+2. 抓取文章正文，输出 Markdown 或 JSON
+3. 默认把抓取结果归档到本地；如当前在飞书，可继续写进飞书文档
 
-推荐调用方式：
+这个 skill 不负责：
+
+1. 安装 Python 本身
+2. 解释文章内容
+3. 改写文章
+4. 兜底处理所有强 JS / 登录态页面
+
+## 推荐流程
+
+默认按下面顺序执行：
+
+1. 先检查环境
+2. 再抓文章
+3. 先确认本地文件已落盘
+4. 飞书场景再写飞书文档
+5. 非飞书场景直接回 Markdown 代码块
+
+不要跳过环境检查直接硬跑。
+
+## 目录约定
+
+以下命令默认都以**当前 skill 目录**为执行基准。
+
+例如：
 
 ```bash
-python3 ~/.openclaw/skills/scrapling-article-fetch/scripts/md_to_feishu_doc.py <article_json_or_title> <src_url> <markdown_file> [doc_id] [user_open_id]
+python scripts/check_env.py
+python scripts/fetch_article.py <url> --json
+```
+
+## 本地输出规则
+
+抓取成功后，脚本会**自动**把结果存到本地，默认不需要手动传路径。
+
+默认保存规则：
+
+1. 从当前执行目录逐级向上找，遇到带 `.git` 的目录即视为项目根
+2. 保存到项目根下的：`Temp/scrapling-article-fetch/YYYY/MM/YYYY-MM-DD/`
+3. 目录不存在时自动新建
+4. 如果不在任何项目内，则回退到系统临时目录（同样自动新建）
+5. 保存完成后，向 stderr 打印一行 `[saved] <文件路径>`，方便后续步骤直接引用
+
+以 `D:\ProjectAI\maolai\WorkBuddyGO` 为例，落盘位置形如：
+
+```text
+D:\ProjectAI\maolai\WorkBuddyGO\Temp\scrapling-article-fetch\2026\10\2026-10-12\<文章标题>.md
+```
+
+默认产物：
+
+1. `<文章标题>.md`
+2. `<文章标题>.json`（供飞书写文档脚本读取标题等结构化字段）
+
+说明：
+
+1. 同一篇文章重复抓取时，直接按同名文件覆盖
+2. 文件名默认使用文章标题；如果标题里有 Windows 非法字符，脚本会自动做最小清洗
+3. 控制台仍会继续输出 Markdown 或 JSON，方便当前对话直接使用
+
+只有需要覆盖默认位置时才传 `--output-root`：
+
+```bash
+python scripts/fetch_article.py <url> --output-root D:\somewhere\outputs
+```
+
+如果这次只想打印，不想落盘：
+
+```bash
+python scripts/fetch_article.py <url> --no-save
+```
+
+## 第一步：检查环境
+
+先执行：
+
+```bash
+python scripts/check_env.py
+```
+
+如果当前机器没有 `python` 但有 `python3`，则改用：
+
+```bash
+python3 scripts/check_env.py
+```
+
+这个命令会输出 JSON，重点看：
+
+1. `python_ok`
+2. `uv_found`
+3. `venv_available`
+
+判断规则：
+
+1. `python_ok=true`：可以继续抓取
+2. `python_ok=false`：先提醒用户安装或升级 Python
+3. `uv_found=true`：优先走 `uv`
+4. `uv_found=false`：允许回退到当前 Python 环境执行
+
+如果没有 Python 或版本低于 3.10，不要继续抓取。
+
+## 第二步：抓取文章
+
+统一入口：
+
+```bash
+python scripts/fetch_article.py <url> [max_chars]
+```
+
+如果当前机器没有 `python` 但有 `python3`，则改用：
+
+```bash
+python3 scripts/fetch_article.py <url> [max_chars]
+```
+
+如果要 JSON：
+
+```bash
+python scripts/fetch_article.py <url> [max_chars] --json
 ```
 
 说明：
-- 第 1 个参数既可以传标题字符串，也可以直接传 `scrapling_fetch.py --json` 产出的 `.json` 文件路径。
-- **飞书场景默认应传 `.json` 文件路径**，让写文档脚本直接读取其中的 `title` 字段；不要让模型自己概括标题。
-- 如果传入的是普通标题字符串，但它明显像正文第一句/小标题，脚本会自动降级，从 Markdown 中再取标题，减少新 agent 传错标题的概率。
-- `user_open_id` 建议传当前用户 open_id，脚本会自动补编辑权限。
-- `doc_id` 可选；传入时表示覆盖更新已有文档，不传则新建文档。
-- 飞书写入脚本只负责把**上游已经产出的 Markdown**稳定写入文档；不要在写入阶段再自行抓原网页补封面，封面缺失要回到上游抓取脚本修。
 
-## 抓取规则
+1. 默认 `max_chars=30000`
+2. 入口内部固定先拿 JSON，再按你的参数决定输出 Markdown 还是 JSON
+3. 如果机器没有 `uv`，则回退到当前 Python 环境直接执行 `scrapling_fetch.py`
+4. 脚本会自动把标准输出切到 UTF-8，避免 Windows 下公众号正文因为 `GBK` 编码输出失败
+5. 成功时会先落本地，再输出正文或 JSON；失败时才输出错误
 
-脚本必须按以下逻辑执行：
+## 抓取结果长什么样
 
-1. 使用 `Fetcher.get()` 拉取页面 HTML。
-2. 如果域名是微信公众号（`mp.weixin.qq.com`），优先尝试：
+### Markdown 输出
+
+默认输出正文 Markdown，通常包含：
+
+1. 标题图 Markdown
+2. 正文内容
+3. 标题层级
+4. 图片链接
+
+### JSON 输出
+
+`--json` 输出字段固定为：
+
+1. `title`
+2. `cover_url`
+3. `markdown`
+
+## 抓取实现规则
+
+底层抓取逻辑在 `scripts/scrapling_fetch.py`，默认规则如下：
+
+1. 先用 `Fetcher.get()` 拉页面
+2. 微信公众号优先尝试：
    - `#js_content`
    - `.rich_media_content`
    - `.rich_media_area_primary`
-3. 再尝试通用选择器：
+3. 再尝试通用正文容器：
    - `article`
    - `main`
    - `.post-content`
    - `[class*="body"]`
-4. 用 `html2text` 转为 Markdown。
-5. 默认保留链接和图片。
-6. 清理常见微信尾部噪音（扫码提示、授权弹窗等文案）。
-7. 按 `max_chars` 截断。
-8. 若未命中正文容器，回退为整页 HTML 转换结果。
+4. 用 `html2text` 转 Markdown
+5. 保留链接和图片
+6. 清理常见微信尾部噪音
+7. 按 `max_chars` 截断
+8. 如果没命中正文容器，就回退到整页 HTML 转换结果
 
-## 默认交付流程（必须执行）
+## 飞书场景
 
-当用户让你抓取公众号/文章时，默认执行以下流程，不需要额外确认：
+如果当前在飞书，默认继续把抓取结果写入飞书文档。
 
-1. 先检查运行环境：
-   - 是否有 Python 3.10+
-   - 是否可用 `uv` 或 `venv + pip`
-   - 如果没有 Python，不要假设用户环境已具备；应先提醒用户安装，或在征得用户同意后再帮装。
-2. 运行抓取脚本，得到 Markdown 和 JSON。
-3. 判断当前聊天渠道：
-   - 如果当前在飞书，默认调用 `md_to_feishu_doc.py`，并把抓取生成的 `.json` 文件路径作为第 1 个参数传入，按当前 agent 身份创建并写入飞书文档
-   - 调用时传当前用户 open_id，确保用户自动拿到编辑权限
-   - 不要让模型自己拼标题参数
-   - 如果不在飞书，为保证用户体验，直接把抓取结果以 Markdown 代码块形式回复给用户，而不是返回飞书链接
-
-### 非飞书场景回复模板
-
-当当前渠道不是飞书时，直接使用脚本生成代码块回复：
+调用方式：
 
 ```bash
-python3 ~/.openclaw/skills/scrapling-article-fetch/scripts/render_markdown_reply.py <title> <url> <markdown_file>
+python scripts/md_to_feishu_doc.py <article_json_or_title> <src_url> <markdown_file> [doc_id] [user_open_id]
 ```
 
-如果当前机器没有 `python3` 但有 `python`，则改用 `python`。实际执行时优先复用前面 wrapper 已选出的解释器，不要手写死。
+优先规则：
+
+1. 第 1 个参数优先传 `.json` 文件路径
+2. 不要让模型自己拼标题
+3. `user_open_id` 优先传当前用户 open_id，确保用户自动拿到编辑权限
+
+这个脚本负责：
+
+1. 创建或更新飞书文档
+2. 写入标题、原文链接、正文、图片
+3. 给当前用户补编辑权限
+
+这个脚本不负责：
+
+1. 重新抓原网页
+2. 猜标题
+3. 修补上游抓取失败
+
+## 非飞书场景
+
+如果当前不在飞书，直接把正文回成 Markdown 代码块，不要返回飞书链接。
+
+调用方式：
+
+```bash
+python scripts/render_markdown_reply.py <title> <url> <markdown_file>
+```
 
 输出格式固定为：
 
@@ -114,17 +245,60 @@ python3 ~/.openclaw/skills/scrapling-article-fetch/scripts/render_markdown_reply
 ```
 ````
 
-不要再额外创建飞书文档，也不要只回一个链接。
+## 默认交付规则
 
-4. 将完整抓取结果交付给用户，至少包含：
-   - 原文链接
-   - 标题
-   - 完整正文（含图片）
+当用户说“抓这篇文章”“抓公众号正文”“帮我读取这篇链接”时，默认执行：
 
-仅当用户明确说“不要写飞书文档”时，才只返回文本。
+1. 跑 `scripts/check_env.py`
+2. 跑 `scripts/fetch_article.py`
+3. 优先使用本地归档结果
+4. 飞书场景写飞书文档
+5. 非飞书场景直接回 Markdown
+
+除非用户明确说：
+
+1. 不要飞书文档
+2. 只要文字
+3. 只要 JSON
+4. 不要本地保存
+
+否则按默认交付规则执行。
+
+## 常见判断
+
+### 可以继续执行
+
+出现下面这些情况，可以继续：
+
+1. `python_ok=true`
+2. 抓取结果里有 `title`
+3. 抓取结果里有非空 `markdown`
+
+### 应该停下来
+
+出现下面这些情况，应该停下来并告诉用户：
+
+1. 没有 Python
+2. Python 版本低于 3.10
+3. 页面返回错误状态
+4. 抓取输出为空且没有有效正文
+
+### 需要回到上游修
+
+如果出现下面这些情况，不要在飞书写入阶段补救：
+
+1. 标题错了
+2. 封面图没抓到
+3. 正文不完整
+4. 图片链接缺失
+
+这些都应该回到 `scripts/fetch_article.py` / `scripts/scrapling_fetch.py` 这一层解决。
 
 ## 备注
 
-- 如果页面高度依赖 JS 导致抓取为空，后续可切换 DynamicFetcher 变体。
-- 输出格式保持稳定，便于与原文逐段对照验收。
-- 默认写飞书文档时，由脚本自动解析当前 agent 对应的飞书账号并直连 Feishu OpenAPI；不要手动传凭证。
+1. 这个 skill 的主入口是 Python，不再依赖 PowerShell 或 bash 包一层
+2. `fetch_article.py` 是统一抓取入口
+3. `scrapling_fetch.py` 是底层抓取实现
+4. `check_env.py` 只负责环境检查
+5. `fetch_article.py` 负责“抓取编排 + 本地落盘 + 控制台输出”
+

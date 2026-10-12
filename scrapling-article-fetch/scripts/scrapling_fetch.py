@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 import json
+import logging
 import re
 import sys
 from urllib.parse import urlparse
 
 import html2text
 from scrapling.fetchers import Fetcher
+from io_utils import configure_utf8_stdio
 
 DEFAULT_SELECTORS = [
     "article",
@@ -230,6 +232,9 @@ def extract_article(url: str, max_chars: int = 30000) -> dict:
 
 
 def main() -> int:
+    configure_utf8_stdio()
+    logging.getLogger().setLevel(logging.ERROR)
+
     if len(sys.argv) < 2:
         print("Usage: python scrapling_fetch.py <url> [max_chars] [--json]", file=sys.stderr)
         return 1
